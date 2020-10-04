@@ -1,28 +1,44 @@
+# /etc/bash_alias
+
 alias cls='printf "\033c"'
 
 function valid_ip() {
-    local  ip=$1
+    local shell="$(ps -hp $$ | awk '{print $5}')"
+    local index=0
+    local  ip=${1}
     local  stat=1
 
     if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        ip=("${(@s/./)ip}")
-        [[ ${ip[1]} -le 255 && ${ip[2]} -le 255 \
-            && ${ip[3]} -le 255 && ${ip[4]} -le 255 ]]
+        if [[ "${shell}" == *"zsh"* ]]; then
+            ip=("${(@s/./)ip}")
+            index=$((index+1))
+        elif [[ ${shell} == *"bash"* ]]; then
+            ip=(${ip//./ })
+        fi
+        [[ ${ip[${index}]} -le 255 && ${ip[$((index+1))]} -le 255 \
+            && ${ip[$((index+2))]} -le 255 && ${ip[$((index+3))]} -le 255 ]]
         stat=$?
     fi
     return $stat
 }
 
 function cssh() {
+    local shell="$(ps -hp $$ | awk '{print $5}')"
+    local index=0
 	local count=0
 	local input=${1}
-        echo ""
-	ADDR=("${(@s/@/)input}") 
-        if valid_ip ${ADDR[2]}; then
-                ip=${ADDR[2]}
-                user=${ADDR[1]}
+    echo ""
+    if [[ "${shell}" == *"zsh"* ]]; then
+	    ADDR=("${(@s/@/)input}")
+        index=$((index+1))
+    elif [[ "${shell}" == *"bash"* ]]; then
+        ADDR=(${input//@/ })
+    fi
+        if valid_ip ${ADDR[$((index+1))]}; then
+                ip=${ADDR[$((index+1))]}
+                user=${ADDR[${index}]}
         else
-                ip=${ADDR[1]}
+                ip=${ADDR[${index}]}
                 user=$(whoami)
         fi
         while ! nc -z -w 1 ${ip} 22; do
